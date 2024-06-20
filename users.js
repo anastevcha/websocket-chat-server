@@ -3,20 +3,33 @@ const { trimStr } = require("./utils");
 let users = [];
 
 const findUser = (user) => {
-  const userName = trimStr(user.name);
-  const userRoom = trimStr(user.room);
+  if (user && user.name) { // Проверка на undefined и на наличие свойства name
+    const userName = trimStr(user.name);
+    const userRoom = trimStr(user.room);
 
-  return users.find(
-    (u) => trimStr(u.name) === userName && trimStr(u.room) === userRoom
-  );
+    return users.find(
+      (u) => trimStr(u.name) === userName && trimStr(u.room) === userRoom
+    );
+  } else {
+    return null;
+  }
 };
 
+
 const addUser = (user) => {
-  const isExist = findUser(user);
+  const trimmedUser = {
+    name: trimStr(user.name),
+    room: trimStr(user.room),
+    
+  };
+  const isExist = findUser(trimmedUser);
 
-  !isExist && users.push(user);
+  if (!isExist) {
+    trimmedUser.isTyping = false; 
+    users.push(trimmedUser); 
+  }
 
-  const currentUser = isExist || user;
+  const currentUser = isExist || trimmedUser;
 
   return { isExist: !!isExist, user: currentUser };
 };
@@ -24,15 +37,24 @@ const addUser = (user) => {
 const getRoomUsers = (room) => users.filter((u) => u.room === room);
 
 const removeUser = (user) => {
-  const found = findUser(user);
+  const userName = trimStr(user.name);
+  const userRoom = trimStr(user.room);
 
-  if (found) {
-    users = users.filter(
-      ({ room, name }) => room === found.room && name !== found.name
-    );
+  const index = users.findIndex(
+    ({ room, name }) =>
+      room === userRoom && trimStr(name) === userName
+  );
+
+  if (index !== -1) {
+    users.splice(index, 1);
   }
 
-  return found;
+  return findUser(user); // Возвращаем найденного пользователя
 };
 
-module.exports = { addUser, findUser, getRoomUsers, removeUser };
+const updateUserTypingStatus = (user, isTyping) => {
+  const updatedUser = { ...user, isTyping };
+  return updatedUser;
+};
+
+module.exports = { addUser, findUser, getRoomUsers, removeUser, updateUserTypingStatus };

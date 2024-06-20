@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 
 const route = require("./route");
-const { addUser, findUser, getRoomUsers, removeUser } = require("./users");
+const { addUser, findUser, getRoomUsers, removeUser, updateUserTypingStatus } = require("./users");
 
 app.use(cors({ origin: "*" }));
 app.use(route);
@@ -65,6 +65,19 @@ io.on("connection", (socket) => {
       });
     }
   });
+
+  socket.on("typing", (user) => {
+    // Отправляем информацию о наборе текста всем участникам чата
+    socket.broadcast.emit("userTyping", user);
+  });
+  
+  socket.on("stopTyping", (user) => {
+    // Отправляем информацию о завершении набора текста всем участникам чата
+    socket.broadcast.emit("userStopTyping", user);
+  });
+  
+
+  
 
   io.on("disconnect", () => {
     console.log("Сервер выключен");
