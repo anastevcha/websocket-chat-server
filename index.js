@@ -5,12 +5,17 @@ const cors = require("cors");
 const app = express();
 
 const route = require("./route");
-const { addUser, findUser, getRoomUsers, removeUser } = require("./users");
+const { addUser, findUser, getRoomUsers, removeUser, saveMessage, getRoomMessages } = require("./users");
+
+const { Pool } = require('pg'); 
+const pool = require('./database');
+
 
 app.use(cors({ origin: "*" }));
 app.use(route);
 
 const server = http.createServer(app);
+
 
 const io = new Server(server, {
   cors: {
@@ -20,8 +25,10 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join", ({ name, room }) => {
+  socket.on("join", async ({ name, room }) => {
     socket.join(room);
+    const messages = await getRoomMessages(room);
+  socket.emit('messageHistory', messages); 
 
     const { user, isExist } = addUser({ name, room });
 
@@ -47,6 +54,7 @@ io.on("connection", (socket) => {
 
     if (user) {
       io.to(user.room).emit("message", { data: { user, message } });
+      saveMessage(user.room, user.name, message); // Запись сообщения в БД
     }
   });
 
@@ -66,8 +74,10 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("typing", (user) => {
-    socket.broadcast.to(user.room).emit("userTyping", user);
+  socket.on('typing', async (user) => {
+  const updatedUser = await updateUserTypingStatus(user, true);
+  socket.broadcast.to(user.room).emit("userTyping", updatedUser);
+
   });
   
   socket.on("stopTyping", (user) => {

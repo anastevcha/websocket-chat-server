@@ -1,4 +1,5 @@
 const { trimStr } = require("./utils");
+const pool = require('./database');
 
 let users = [];
 
@@ -52,9 +53,37 @@ const removeUser = (user) => {
   return findUser(user); // Возвращаем найденного пользователя
 };
 
+const saveMessage = async (room, sender, message) => {
+  try {
+    const query = {
+      text: 'INSERT INTO chat_messages (room, sender, message) VALUES ($1, $2, $3)',
+      values: [room, sender, message],
+    };
+    await pool.query(query);
+  } catch (error) {
+    console.error('Ошибка при записи сообщения в базу данных:', error);
+  }
+};
+
+
+const getRoomMessages = async (room) => {
+  try {
+    const query = {
+      text: 'SELECT * FROM chat_messages WHERE room = $1 ORDER BY timestamp ASC',
+      values: [room],
+    };
+    const result = await pool.query(query);
+    return result.rows;
+  } catch (error) {
+    console.error('Ошибка при получении сообщений из базы данных:', error);
+  }
+};
+
+
+
 const updateUserTypingStatus = (user, isTyping) => {
   const updatedUser = { ...user, isTyping };
   return updatedUser;
 };
 
-module.exports = { addUser, findUser, getRoomUsers, removeUser, updateUserTypingStatus };
+module.exports = { addUser, findUser, getRoomUsers, removeUser, updateUserTypingStatus, saveMessage, getRoomMessages };
